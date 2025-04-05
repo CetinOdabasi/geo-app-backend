@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcı modeli
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  apiKeys   ApiKey[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// API Anahtarı modeli
+model ApiKey {
+  id             Int       @id @default(autoincrement())
+  key            String    @unique
+  name           String
+  user           User      @relation(fields: [userId], references: [id])
+  userId         Int
+  active         Boolean   @default(true)
+  dailyLimit     Int       @default(100)
+  usageCount     Int       @default(0)
+  lastResetDate  DateTime  @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  ApiKeyUsage    ApiKeyUsage[]
+}
+
+// API anahtarı kullanım takibi
+model ApiKeyUsage {
+  id        Int      @id @default(autoincrement())
+  apiKey    ApiKey   @relation(fields: [apiKeyId], references: [id])
+  apiKeyId  Int
+  endpoint  String
+  timestamp DateTime @default(now())
+}
+
+// Coğrafi veri modelleri
+model Country {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  geometry  Unsupported("geometry(MultiPolygon, 4326)")
+  cities    City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id          Int      @id @default(autoincrement())
+  name        String
+  country     Country  @relation(fields: [countryId], references: [id])
+  countryId   Int
+  population  Int?
+  location    Unsupported("geometry(Point, 4326)")
+  timezone    String?
+  postalCodes String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
